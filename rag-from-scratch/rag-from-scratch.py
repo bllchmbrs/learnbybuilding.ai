@@ -281,16 +281,16 @@ print(''.join(full_response))
 # 3. **The number of documents we give to the LLM** 👉 Right now, we're only giving the LLM one document. We could feed in several as 'context' and allow the model to provide a more personalized recommendation based on the user input.
 # 4. **The parts of documents that we give to the LLM** 👉 If we have bigger or more thorough documents, we might just want to add in parts of those documents, parts of various documents, or some variation there of. In the lexicon, this is called chunking.
 # 5. **Our document storage tool** 👉 We might store our documents in a different way or different database. In particular, if we have a lot of documents, we might explore storing them in a data lake or a vector store.
-# 6. **The similarity measure** How we measure similarity is of consequence, we might need to trade off performance and thoroughness (e.g., looking at every individual document).
+# 6. **The similarity measure** 👉 How we measure similarity is of consequence, we might need to trade off performance and thoroughness (e.g., looking at every individual document).
 # 7. **The pre-processing of the documents & user input** 👉 We might perform some extra preprocessing or augmentation of the user input before we pass it into the similarity measure. For instance, we might use an embedding to convert that input to a vector.
 # 8. **The similarity measure** 👉 We can change the similarity measure to fetch better or more relevant documents.
 # 9. **The model** 👉 We can change the final model that we use. We're using llama2 above, but we could just as easily use an Anthropic or Claude Model.
 # 10. **The prompt** 👉 We could use a different prompt into the LLM/Model and tune it according to the output we want to get the output we want.
 # 11. **If you're worried about harmful or toxic output** 👉 We could implement a "circuit breaker" of sorts that runs the user input to see if there's toxic, harmful, or dangerous discussions. For instance, in a healthcare context you could see if the information contained unsafe languages and respond accordingly - outside of the typical flow.
 # 
-# 
 # Now improvements don't stop here. They're quite limitless and that's what we'll get into in the future. Until then, [let me know if you have any questions on twitter](https://twitter.com/bllchmbrs) and happy RAGING :).
 
 # ## References
 # 
 # - [Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks](https://arxiv.org/abs/2005.11401)
+# - [Jerry Liu on Twitter advocating for users to build RAG from scratch](https://twitter.com/jerryjliu0/status/1716122650836439478)
