@@ -15,26 +15,41 @@
 # 2. An input from the user
 # 3. a similarity measure between the collection of documents and the user input
 # 
-# Yes, it's that simple. You don't need a vector store, you don't even *need* an LLM.
+# Yes, it's that simple. 
+# 
+# You don't need a vector store, you don't even *need* an LLM. Everyone is trying to make it so complicated. It's not.
 # 
 # ## The ordered steps of a RAG system
 # 
 # We'll perform the following steps in sequence.
 # 
 # 1. Receive a user input
-# 2. Perform our similarity measure.
-# 3. Post-process the user input and the fetched document(s)
+# 2. Perform our similarity measure
+# 3. Post-process the user input and the fetched document(s).
 # 
+# The post-processing is done with an LLM.
+# 
+# ## A note from the paper itself
+# 
+# The actual RAG paper is obviously *the* resource. The problem is that it assumes a LOT of context. It's more complicated than we need it to be.
+# 
+# For instance, here's the overview of the RAG system as proposed in the paper.
+# 
+# ![retrieval augmented generation data and user flow](images/rag-paper-image.png)
+# 
+# That's dense. It's great for researchers but for the rest of us, it's going to be a lot easier to learn step by step by building the system ourselves.
 # 
 # ## Working through an example - the simplest RAG system
 # 
-# Let's walk through all of this with code examples.
+# Let's get back to building RAG from scratch, step by step. Here's the simplified version we'll be working through.
+# 
+# ![simple retrieval in RAG system](images/the-simplest-retrieval-augmented-generation-system.jpg)
 # 
 # ### Getting a collection of documents
 # 
 # Below you can see that we've got a simple corpus of 'documents' (please be generous 😉).
 
-# In[67]:
+# In[1]:
 
 
 corpus_of_documents = [
@@ -61,7 +76,7 @@ corpus_of_documents = [
 # 
 # A challenge is that if we have a plain string like `"Take a leisurely walk in the park and enjoy the fresh air.",`, we're going to have to pre-process that into a set, so that we can perform these comparisons. We're going to do this in the simplest way possible, lower case and split by `" "`.
 
-# In[73]:
+# In[2]:
 
 
 def jaccard_similarity(query, document):
@@ -74,7 +89,7 @@ def jaccard_similarity(query, document):
 
 # Now we need to define a function that takes in the exact query and our corpus and selects the 'best' document to return to the user.
 
-# In[74]:
+# In[3]:
 
 
 def return_response(query, corpus):
@@ -87,7 +102,7 @@ def return_response(query, corpus):
 
 # Now we can run it, we'll start with a simple prompt.
 
-# In[75]:
+# In[4]:
 
 
 user_prompt = "What is a leisure activity that you like?"
@@ -95,7 +110,7 @@ user_prompt = "What is a leisure activity that you like?"
 
 # And a simple user input...
 
-# In[76]:
+# In[5]:
 
 
 user_input = "I like to hike"
@@ -103,7 +118,7 @@ user_input = "I like to hike"
 
 # Now we can return our response.
 
-# In[77]:
+# In[6]:
 
 
 return_response(user_input, corpus_of_documents)
@@ -115,14 +130,16 @@ return_response(user_input, corpus_of_documents)
 # #### I got 99 problems and bad similarity is one
 # 
 # Now we've opted for a simple similarity measure for learning. But this is going to be problematic because it's so simple. It has no notion of **semantics**. It's just looks at what words are in both documents. That means that if we provide a negative example, we're going to get the same "result" because that's the closest document.
+# 
+# ![Bad Similarity Problems in Retrieval Augmented Generation](images/a-key-challenge-of-retrieval-augmented-generation-systems-semantics.jpg)
 
-# In[80]:
+# In[7]:
 
 
 user_input = "I don't like to hike"
 
 
-# In[81]:
+# In[8]:
 
 
 return_response(user_input, corpus_of_documents)
@@ -140,7 +157,7 @@ return_response(user_input, corpus_of_documents)
 # 
 # This post is going to assume some basic knowledge of large language models, so let's get right to querying this model.
 
-# In[83]:
+# In[9]:
 
 
 import requests
@@ -158,7 +175,7 @@ import json
 # 
 # When you run this code, you'll see the streaming result. Streaming is important for user experience.
 
-# In[95]:
+# In[10]:
 
 
 user_input = "I like to hike"
@@ -182,7 +199,7 @@ Compile a recommendation to the user based on the recommended activity and the u
 # 
 # an important step is to make sure that ollama's running already on your local machine by running `ollama serve` (crazy, I know).
 
-# In[98]:
+# In[11]:
 
 
 url = 'http://localhost:11434/api/generate'
@@ -200,18 +217,20 @@ try:
         # filter out keep-alive new lines
         if line:
             decoded_line = json.loads(line.decode('utf-8'))
-            # print(decoded_line['response']) # uncomment if you want to see the results token by token
+            # print(decoded_line['response']) # uncomment to results, token by token
             full_response.append(decoded_line['response'])
 finally:
     response.close()
 print(''.join(full_response))
 
 
-# This gives us a complete RAG Application, from scratch, no providers, no services. You know all of the components in a Retrieval-Augmented Generation application.
+# This gives us a complete RAG Application, from scratch, no providers, no services. You know all of the components in a Retrieval-Augmented Generation application. Visually, here's what we've built.
+# 
+# ![simplified version of retrieval augmented generation](images/simplified-version-of-retrieval-augmented-generation.jpg)
 # 
 # The LLM (if you're lucky) will handle the user input that goes against the recommended document. We can see that below.
 
-# In[100]:
+# In[12]:
 
 
 user_input = "I don't like to hike"
@@ -244,7 +263,7 @@ try:
         # filter out keep-alive new lines
         if line:
             decoded_line = json.loads(line.decode('utf-8'))
-            # print(decoded_line['response']) # uncomment if you want to see the results token by token
+            # print(decoded_line['response'])  # uncomment to results, token by token
             full_response.append(decoded_line['response'])
 finally:
     response.close()
@@ -261,18 +280,17 @@ print(''.join(full_response))
 # 2. **The depth/size of documents** 👉 higher quality content and longer documents with more information might be better.
 # 3. **The number of documents we give to the LLM** 👉 Right now, we're only giving the LLM one document. We could feed in several as 'context' and allow the model to provide a more personalized recommendation based on the user input.
 # 4. **The parts of documents that we give to the LLM** 👉 If we have bigger or more thorough documents, we might just want to add in parts of those documents, parts of various documents, or some variation there of. In the lexicon, this is called chunking.
-# 5. **Our document storage tool** 👉 We might store our documents in a different way or different database. In particular, if we have a lot of them, we might explore storing them in a data lake or a vector store.
-# 6. **The pre-processing of the documents & user input** 👉 We might perform some extra preprocessing or augmentation of the user input before we pass it into the similarity measure. For instance, we might use an embedding to convert that input to a vector.
-# 7. **The similarity measure** 👉 We can change the similarity measure to fetch better or more relevant documents.
-# 8. **The LLM/Model we use** 👉 We can change the final model that we use. We're using llama2 above, but we could just as easily use an Anthropic or Claude Model.
-# 9. **The prompt that we use** 👉 We could use a different prompt into the LLM/Model and tune it according to the output we want to get the output we want.
-# 10. **If you're worried about harmful or toxic output** 👉 We could implement a "circuit breaker" of sorts that runs the user input to see if there's toxic, harmful, or dangerous discussions. For instance, in a healthcare context you could see if the information contained suicidal or harm-to-others type languages and respond accordingly - outside of the typical flow.
+# 5. **Our document storage tool** 👉 We might store our documents in a different way or different database. In particular, if we have a lot of documents, we might explore storing them in a data lake or a vector store.
+# 6. **The similarity measure** How we measure similarity is of consequence, we might need to trade off performance and thoroughness (e.g., looking at every individual document).
+# 7. **The pre-processing of the documents & user input** 👉 We might perform some extra preprocessing or augmentation of the user input before we pass it into the similarity measure. For instance, we might use an embedding to convert that input to a vector.
+# 8. **The similarity measure** 👉 We can change the similarity measure to fetch better or more relevant documents.
+# 9. **The model** 👉 We can change the final model that we use. We're using llama2 above, but we could just as easily use an Anthropic or Claude Model.
+# 10. **The prompt** 👉 We could use a different prompt into the LLM/Model and tune it according to the output we want to get the output we want.
+# 11. **If you're worried about harmful or toxic output** 👉 We could implement a "circuit breaker" of sorts that runs the user input to see if there's toxic, harmful, or dangerous discussions. For instance, in a healthcare context you could see if the information contained unsafe languages and respond accordingly - outside of the typical flow.
 # 
 # 
 # Now improvements don't stop here. They're quite limitless and that's what we'll get into in the future. Until then, [let me know if you have any questions on twitter](https://twitter.com/bllchmbrs) and happy RAGING :).
 
-# In[ ]:
-
-
-
-
+# ## References
+# 
+# - [Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks](https://arxiv.org/abs/2005.11401)
