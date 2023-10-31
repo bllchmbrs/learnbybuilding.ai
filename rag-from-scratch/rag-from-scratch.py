@@ -1,15 +1,47 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Building a RAG Application from Scratch
+# # A beginner's guide to building a Retrieval Augmented Generation (RAG) application from scratch
 # 
-# All these vendors are trying to overcomplicate retrieval augmented generation (RAG). They're trying to inject different tools all over the place and make it more complicated than it needs to be. Let's change that.
+# Retrieval Augmented Generation, or RAG, is all the rage these days because it introduces some serious capabilities to large language models like OpenAI's GPT-4 - and that's the ability to use and leverage their own data.
 # 
-# This tutorial is going to teach you how to build RAG applications from scratch. No fluff, no jargon, no libraries, just a simple step by step RAG application.
+# ## The problem with learning in a fast moving space
+# 
+# There's so much noise in the AI space and in particular about RAG. Vendors are trying to overcomplicate it. They're trying to inject their tools, their ecosystems, their vision.
+# 
+# It's making RAG, way more complicated than it needs to me.
+# 
+# This tutorial is going to teach you how to build RAG applications from scratch. This tutorials is oriented towards beginners to help them learn and get started.
+# 
+# No fluff, no (ok, minimal) jargon, no libraries, just a simple step by step RAG application.
+# 
+# [Jerry from LlamaIndex advocates for building things from scratch to really understand the pieces](https://twitter.com/jerryjliu0/status/1716122650836439478). Once you do, using a library like LlamaIndex makes more sense.
+# 
+# ![Jerry from LlamaIndex advocating for RAG from scratch](images/motivating-rag-from-scratch.png)
+# 
+# Build from scratch to learn, then build with libraries to scale.
 # 
 # Let's get started!
 # 
-# ## The High Level Components of a RAG System
+# ## Introducing our concept: Retrieval Augmented Generation
+# 
+# You may or may not have heard of Retrieval Augmented Generation or RAG.
+# 
+# Here's the definition from [the blog post introducing the concept from Facebook](https://ai.meta.com/blog/retrieval-augmented-generation-streamlining-the-creation-of-intelligent-natural-language-processing-models/):
+# 
+# > Building a model that researches and contextualizes is more challenging, but it's essential for future advancements. We recently made substantial progress in this realm with our Retrieval Augmented Generation (RAG) architecture, an end-to-end differentiable model that combines an information retrieval component (Facebook AI’s dense-passage retrieval system) with a seq2seq generator (our Bidirectional and Auto-Regressive Transformers [BART] model). RAG can be fine-tuned on knowledge-intensive downstream tasks to achieve state-of-the-art results compared with even the largest pretrained seq2seq language models. And unlike these pretrained models, RAG’s internal knowledge can be easily altered or even supplemented on the fly, enabling researchers and engineers to control what RAG knows and doesn’t know without wasting time or compute power retraining the entire model.
+# 
+# Wow, that's a mouthful.
+# 
+# Let's simplify things, since we're just getting started. The gist of the technique is to add your own data (via some retrieval tool) into the prompt that you pass into a large language model. With that, you get a result.
+# 
+# That gives you several benefits:
+# 
+# 1. You can include facts in the prompt to help the LLM avoid hallucinations
+# 2. You can (manually) refer to sources of truth when responding to a user query, helping to double check any potential issues.
+# 3. You can leverage data that the LLM might not have been trained on.
+# 
+# ## The High Level Components of our RAG System
 # 
 # 1. a collection of documents (formally called a corpus)
 # 2. An input from the user
@@ -17,9 +49,11 @@
 # 
 # Yes, it's that simple. 
 # 
-# You don't need a vector store, you don't even *need* an LLM. Everyone is trying to make it so complicated. It's not.
+# To start learning and understanding RAG based systems, you don't need a vector store, you don't even *need* an LLM (at least to learn and understand conceptually). 
 # 
-# ## The ordered steps of a RAG system
+# Everyone is trying to make it so complicated. It's not.
+# 
+# ## The ordered steps of a querying RAG system
 # 
 # We'll perform the following steps in sequence.
 # 
@@ -31,17 +65,19 @@
 # 
 # ## A note from the paper itself
 # 
-# The actual RAG paper is obviously *the* resource. The problem is that it assumes a LOT of context. It's more complicated than we need it to be.
+# [The actual RAG paper](https://arxiv.org/abs/2005.11401) is obviously *the* resource. The problem is that it assumes a LOT of context. It's more complicated than we need it to be.
 # 
 # For instance, here's the overview of the RAG system as proposed in the paper.
 # 
 # ![retrieval augmented generation data and user flow](images/rag-paper-image.png)
 # 
-# That's dense. It's great for researchers but for the rest of us, it's going to be a lot easier to learn step by step by building the system ourselves.
+# That's dense. 
+# 
+# It's great for researchers but for the rest of us, it's going to be a lot easier to learn step by step by building the system ourselves.
 # 
 # ## Working through an example - the simplest RAG system
 # 
-# Let's get back to building RAG from scratch, step by step. Here's the simplified version we'll be working through.
+# Let's get back to building RAG from scratch, step by step. Here's the simplified steps that we'll be working through.
 # 
 # ![simple retrieval in RAG system](images/the-simplest-retrieval-augmented-generation-system.jpg)
 # 
@@ -175,7 +211,7 @@ import json
 # 
 # When you run this code, you'll see the streaming result. Streaming is important for user experience.
 
-# In[10]:
+# In[13]:
 
 
 user_input = "I like to hike"
@@ -185,7 +221,7 @@ full_response = []
 # https://github.com/jmorganca/ollama/blob/main/docs/api.md
 
 prompt = """
-You are a helpful bot that makes recommendations for activities. You are helpful.
+You are a bot that makes recommendations for activities. You answer in very short sentences and do not include extra information.
 
 This is the recommended activity: {relevant_document}
 
@@ -197,9 +233,11 @@ Compile a recommendation to the user based on the recommended activity and the u
 
 # Now that we've defined that, let's make the API call to ollama (and llama2).
 # 
-# an important step is to make sure that ollama's running already on your local machine by running `ollama serve` (crazy, I know).
+# an important step is to make sure that ollama's running already on your local machine by running `ollama serve`.
+# 
+# > Note: this might be slow on your machine, it's certainly slow on mine. Be patient, young grasshopper.
 
-# In[11]:
+# In[16]:
 
 
 url = 'http://localhost:11434/api/generate'
@@ -213,11 +251,15 @@ headers = {'Content-Type': 'application/json'}
 response = requests.post(url, data=json.dumps(data), headers=headers, stream=True)
 
 try:
+    count = 0
     for line in response.iter_lines():
         # filter out keep-alive new lines
+        # count += 1
+        # if count % 5== 0:
+        #     print(decoded_line['response']) # print every fifth token
         if line:
             decoded_line = json.loads(line.decode('utf-8'))
-            # print(decoded_line['response']) # uncomment to results, token by token
+            
             full_response.append(decoded_line['response'])
 finally:
     response.close()
@@ -230,7 +272,7 @@ print(''.join(full_response))
 # 
 # The LLM (if you're lucky) will handle the user input that goes against the recommended document. We can see that below.
 
-# In[12]:
+# In[18]:
 
 
 user_input = "I don't like to hike"
@@ -239,7 +281,7 @@ relevant_document = return_response(user_input, corpus_of_documents)
 full_response = []
 
 prompt = """
-You are a helpful bot that makes recommendations for activities. You are helpful.
+You are a bot that makes recommendations for activities. You answer in very short sentences and do not include extra information.
 
 This is the recommended activity: {relevant_document}
 

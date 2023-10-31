@@ -1,0 +1,6 @@
+feedparser
+unstructured[html]
+tiktoken
+llamaindex
+dotenv
+faiss-cpu

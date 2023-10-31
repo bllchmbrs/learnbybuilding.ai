@@ -1,5 +1,6 @@
 **/.env
 **/.ipynb_checkpoints
+**/snippets
 scratch/*
 .env
 .ipynb_checkpoints
